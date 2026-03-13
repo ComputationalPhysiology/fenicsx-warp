@@ -1,0 +1,14 @@
+format: jb-book
+root: README
+
+parts:
+  - caption: Theory
+    chapters:
+    - file: "docs/math"
+  - caption: Examples
+    chapters:
+    - file: "examples/mode"
+
+  - caption: Python API
+    chapters:
+    - file: "docs/api"

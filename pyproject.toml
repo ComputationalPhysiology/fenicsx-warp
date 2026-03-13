@@ -33,6 +33,19 @@ test = [
     "ukb-atlas[pyvista]",
     "fenicsx-ldrb",
 ]
+docs = [
+    "jupyter-book<2.0",
+    "jupytext",
+    "jupyter",
+    "pyvista[all]>=0.45.0",
+    "vtk>=9.5.0",
+    "trame-vuetify",
+    "ipywidgets",
+    "fenicsx-ldrb",
+    "ukb-atlas",
+    "sphinx-codeautolink",
+    "sphinx-copybutton",
+]
 
 [tool.setuptools]
 include-package-data = true

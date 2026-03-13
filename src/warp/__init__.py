@@ -6,7 +6,7 @@ from .warp import warp_mesh
 meta = metadata("fenicsx-warp")
 __version__ = meta["Version"]
 __author__ = meta["Author-email"]
-__license__ = meta["license-expression"]
+# __license__ = meta["license-expression"]
 __email__ = meta["Author-email"]
 __program_name__ = meta["Name"]
 
