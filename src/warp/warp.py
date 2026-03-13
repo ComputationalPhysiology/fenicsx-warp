@@ -1,7 +1,11 @@
+import logging
+
 import dolfinx
 import numpy as np
 
 from . import interpolation, models
+
+logger = logging.getLogger(__name__)
 
 
 def _constrain_base_displacement(displacement_func, origin, normal, tol=1e-2):
@@ -53,7 +57,6 @@ def compute_base_normal(mesh: dolfinx.mesh.Mesh, facet_tags: dolfinx.mesh.MeshTa
     )
     bm = np.concatenate(base_midpoints)
     base_centroid = bm.mean(axis=0)
-    # print("Base centroid", len(base_midpoints))
     base_points_centered = bm - base_centroid
     _, _, vh = np.linalg.svd(base_points_centered)
     base_normal = vh[-1, :]
@@ -62,7 +65,7 @@ def compute_base_normal(mesh: dolfinx.mesh.Mesh, facet_tags: dolfinx.mesh.MeshTa
 
 def get_boundary_conditions(domain, V, displacement_func):
     """Interpolates the displacement function onto the mesh boundary."""
-    print("Applying boundary conditions...")
+    logger.info("Applying boundary conditions...")
     u_bc_func = dolfinx.fem.Function(V)
     u_bc_func.interpolate(displacement_func)
 
@@ -117,7 +120,7 @@ def warp_mesh(
 
     # Optional: Constrain the base to remain flat if clipping params are provided
     if clip_origin is not None and clip_normal is not None:
-        print("Applying flat base constraints...")
+        logger.info("Applying flat base constraints...")
         displacement_func = _constrain_base_displacement(
             displacement_func, clip_origin, clip_normal
         )
@@ -139,5 +142,5 @@ def warp_mesh(
         raise ValueError("Invalid solver method. Choose 'hyperelastic' or 'laplace'.")
 
     # 4. Apply Warp
-    print("Applying warp to mesh coordinates...")
+    logger.info("Applying warp to mesh coordinates...")
     domain.geometry.x[:, :3] += u_solution.x.array.reshape(-1, 3)

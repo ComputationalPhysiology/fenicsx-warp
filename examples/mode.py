@@ -10,7 +10,7 @@
 #    PDE to morph the volume smoothly.
 # 4. Visualize the reference wireframe vs. the warped volume.
 
-
+import logging
 from pathlib import Path
 
 from mpi4py import MPI
@@ -33,6 +33,7 @@ except ImportError:
 # ## Setup Directories and Data
 # We define a cache directory for the atlas file and a folder for the template mesh.
 
+logging.basicConfig(level=logging.INFO)
 cache_dir = Path.home() / ".ukb"
 atlas_file = cache_dir / "UKBRVLV.h5"
 mean_folder = Path("data_mean")

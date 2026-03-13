@@ -1,6 +1,10 @@
+import logging
+
 import dolfinx
 import dolfinx.fem.petsc
 import ufl
+
+logger = logging.getLogger(__name__)
 
 
 def solve_laplace(
@@ -23,7 +27,7 @@ def solve_laplace(
     dolfinx.fem.Function
         The computed displacement field.
     """
-    print("Setting up Linear Laplace PDE...")
+    logger.info("Setting up Linear Laplace PDE...")
     u = ufl.TrialFunction(V)
     v = ufl.TestFunction(V)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
@@ -32,7 +36,7 @@ def solve_laplace(
         * ufl.dx
     )
 
-    print("Solving linear Laplace warping...")
+    logger.info("Solving linear Laplace warping...")
     problem = dolfinx.fem.petsc.LinearProblem(
         a,
         L,
@@ -67,7 +71,7 @@ def solve_hyperelastic(domain, V, bc, E=1.0e4, nu=0.45):
     dolfinx.fem.Function
         The computed displacement field.
     """
-    print("Setting up Non-Linear Hyperelastic PDE...")
+    logger.info("Setting up Non-Linear Hyperelastic PDE...")
     u = dolfinx.fem.Function(V)
     v = ufl.TestFunction(V)
     d = len(u)
@@ -94,5 +98,5 @@ def solve_hyperelastic(domain, V, bc, E=1.0e4, nu=0.45):
         residual, u, bcs=[bc], petsc_options_prefix="warp_hyperelastic_"
     )
 
-    print("Solving non-linear hyperelastic warping...")
+    logger.info("Solving non-linear hyperelastic warping...")
     return problem.solve()
