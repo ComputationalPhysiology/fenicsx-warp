@@ -20,9 +20,9 @@ def get_boundary_conditions(domain, V, displacement_func):
 
 def warp_mesh(
     domain: dolfinx.mesh.Mesh,
-    points_mean: np.ndarray,
+    points_reference: np.ndarray,
     points_target: np.ndarray,
-    interp_method: str = "rbf",
+    interpolation_method: str = "rbf",
     solver_method: str = "hyperelastic",
 ):
     """
@@ -32,11 +32,11 @@ def warp_mesh(
     ----------
     domain : dolfinx.mesh.Mesh
         The computational domain (template mesh) to be warped.
-    points_mean : np.ndarray
+    points_reference : np.ndarray
         The reference boundary points (N, 3).
     points_target : np.ndarray
         The target boundary points (N, 3).
-    interp_method : str, optional
+    interpolation_method : str, optional
         Interpolation method ('rbf' or 'kdtree'), by default 'rbf'.
     solver_method : str, optional
         PDE solver method ('hyperelastic' or 'laplace'), by default 'hyperelastic'.
@@ -45,13 +45,15 @@ def warp_mesh(
     -----
     The input domain geometry is updated in-place.
     """
-    displacements = points_target - points_mean
+    displacements = points_target - points_reference
 
     # 1. Select and Create Interpolator
-    if interp_method == "rbf":
-        displacement_func = interpolation.create_rbf_interpolator(points_mean, displacements)
-    elif interp_method == "kdtree":
-        displacement_func = interpolation.create_kdtree_interpolator(points_mean, displacements)
+    if interpolation_method == "rbf":
+        displacement_func = interpolation.create_rbf_interpolator(points_reference, displacements)
+    elif interpolation_method == "kdtree":
+        displacement_func = interpolation.create_kdtree_interpolator(
+            points_reference, displacements
+        )
     else:
         raise ValueError("Invalid interpolation method. Choose 'rbf' or 'kdtree'.")
 
