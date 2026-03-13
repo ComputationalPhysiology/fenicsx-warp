@@ -14,7 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 keywords = ["cardiac", "geometry"]
-urls = {Homepage = "https://github.com/finsberg/fenicsx-warp" }
+urls = {Homepage = "https://github.com/ComputationalPhysiology/fenicsx-warp" }
 requires-python = ">=3.10"
 dependencies = [
     "fenics-dolfinx>=0.10.0",
