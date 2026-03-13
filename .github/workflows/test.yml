@@ -1,0 +1,45 @@
+name: Test package
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test-code:
+    name: Test on ${{ matrix.container }}
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.container }}
+    env:
+      DEB_PYTHON_INSTALL_LAYOUT: deb_system
+
+    strategy:
+      fail-fast: false
+      matrix:
+        container: [
+          "ghcr.io/fenics/dolfinx/dolfinx:stable",
+          "ghcr.io/fenics/dolfinx/dolfinx:nightly",
+        ]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install package
+        run: |
+          python3 -m pip install -e .[test]
+
+      - name: Run tests
+        run: python3 -m pytest -v --cov=warp --cov-report html --cov-report xml --cov-report term-missing
+
+      - name: Extract Coverage
+        run: |
+          python3 -m coverage report | sed 's/^/    /' >> $GITHUB_STEP_SUMMARY
+          python3 -m coverage json
+          export TOTAL=$(python3 -c "import json;print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
+          echo "total=$TOTAL" >> $GITHUB_ENV
+
+      - name: Upload HTML report.
+        uses: actions/upload-artifact@v6
+        if: ${{ matrix.container == 'ghcr.io/fenics/dolfinx/dolfinx:stable' }}
+        with:
+          name: html-report
+          path: htmlcov
