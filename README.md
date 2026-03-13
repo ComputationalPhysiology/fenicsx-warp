@@ -6,8 +6,9 @@ Traditional mesh generation for Statistical Shape Models (SSMs) often fails at e
 
 
 ## Install
+
 ```
-python3 -m pip install git+https://github.com/ComputationalPhysiology/fenicsx-warp
+python3 -m pip install fenicsx-warp
 ```
 
 ## Quick Start
