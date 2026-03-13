@@ -8,6 +8,7 @@ parts:
   - caption: Examples
     chapters:
     - file: "examples/mode"
+    - file: "examples/mode_clipped"
 
   - caption: Python API
     chapters:

@@ -47,9 +47,9 @@ def test_warp_mesh(sample_data, interp_method, solver_method):
     # Execute the modular warp pipeline
     warp_mesh(
         domain=domain,
-        points_mean=points_mean,
+        points_reference=points_mean,
         points_target=points_target,
-        interp_method=interp_method,
+        interpolation_method=interp_method,
         solver_method=solver_method,
     )
 
@@ -66,10 +66,20 @@ def test_warp_mesh(sample_data, interp_method, solver_method):
 def test_invalid_interp_method(sample_data):
     domain, points_mean, points_target = sample_data
     with pytest.raises(ValueError, match="Invalid interpolation method"):
-        warp_mesh(domain, points_mean, points_target, interp_method="invalid_name")
+        warp_mesh(
+            domain,
+            points_reference=points_mean,
+            points_target=points_target,
+            interpolation_method="invalid_name",
+        )
 
 
 def test_invalid_solver_method(sample_data):
     domain, points_mean, points_target = sample_data
     with pytest.raises(ValueError, match="Invalid solver method"):
-        warp_mesh(domain, points_mean, points_target, solver_method="invalid_name")
+        warp_mesh(
+            domain,
+            points_reference=points_mean,
+            points_target=points_target,
+            solver_method="invalid_name",
+        )

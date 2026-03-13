@@ -4,6 +4,62 @@ import numpy as np
 from . import interpolation, models
 
 
+def _constrain_base_displacement(displacement_func, origin, normal, tol=1e-2):
+    """
+    Wraps the displacement function to strictly constrain points on the clipping
+    plane so that they remain perfectly flat during deformation.
+    """
+    origin = np.asarray(origin, dtype=np.float64)
+    normal = np.asarray(normal, dtype=np.float64)
+    normal = normal / np.linalg.norm(normal)
+
+    def constrained_func(x):
+        # x has shape (3, N)
+        u = displacement_func(x)
+
+        # Calculate signed distance from the clipping plane for all points
+        dist = np.sum((x - origin[:, None]) * normal[:, None], axis=0)
+
+        # Mask for points lying on the base plane
+        is_base = np.abs(dist) < tol
+
+        if np.any(is_base):
+            u_base = u[:, is_base]
+
+            # Calculate the displacement component along the normal direction
+            u_dot_n = np.sum(u_base * normal[:, None], axis=0)
+
+            # To keep the base perfectly flat but allow it to translate,
+            # we replace varying normal displacements with the average normal displacement.
+            mean_u_dot_n = np.mean(u_dot_n)
+
+            # Subtract the varying normal component and add the uniform one
+            u_base_projected = (
+                u_base - (u_dot_n * normal[:, None]) + (mean_u_dot_n * normal[:, None])
+            )
+
+            u[:, is_base] = u_base_projected
+
+        return u
+
+    return constrained_func
+
+
+def compute_base_normal(mesh: dolfinx.mesh.Mesh, facet_tags: dolfinx.mesh.MeshTags, marker: int):
+    base_facets = facet_tags.find(marker)
+    base_midpoints = mesh.comm.gather(
+        dolfinx.mesh.compute_midpoints(mesh, 2, base_facets),
+        root=0,
+    )
+    bm = np.concatenate(base_midpoints)
+    base_centroid = bm.mean(axis=0)
+    # print("Base centroid", len(base_midpoints))
+    base_points_centered = bm - base_centroid
+    _, _, vh = np.linalg.svd(base_points_centered)
+    base_normal = vh[-1, :]
+    return base_normal
+
+
 def get_boundary_conditions(domain, V, displacement_func):
     """Interpolates the displacement function onto the mesh boundary."""
     print("Applying boundary conditions...")
@@ -24,6 +80,8 @@ def warp_mesh(
     points_target: np.ndarray,
     interpolation_method: str = "rbf",
     solver_method: str = "hyperelastic",
+    clip_origin: tuple[float, float, float] | np.ndarray | None = None,
+    clip_normal: tuple[float, float, float] | np.ndarray | None = None,
 ):
     """
     Warps a given mesh from a mean shape to a target shape using PDE-based deformation.
@@ -57,10 +115,21 @@ def warp_mesh(
     else:
         raise ValueError("Invalid interpolation method. Choose 'rbf' or 'kdtree'.")
 
+    # Optional: Constrain the base to remain flat if clipping params are provided
+    if clip_origin is not None and clip_normal is not None:
+        print("Applying flat base constraints...")
+        displacement_func = _constrain_base_displacement(
+            displacement_func, clip_origin, clip_normal
+        )
+
     # 2. Set Up Function Space and Boundary Conditions
     V = dolfinx.fem.functionspace(domain, ("Lagrange", 1, (domain.geometry.dim,)))
-    bc = get_boundary_conditions(domain, V, displacement_func)
-
+    # bc = get_boundary_conditions(domain, V, displacement_func)
+    bc = get_boundary_conditions(
+        domain,
+        V,
+        displacement_func,
+    )
     # 3. Solve PDE
     if solver_method == "hyperelastic":
         u_solution = models.solve_hyperelastic(domain, V, bc)
