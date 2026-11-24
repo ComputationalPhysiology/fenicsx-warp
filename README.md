@@ -14,5 +14,21 @@ python3 -m pip install fenicsx-warp
 ## Quick Start
 See example in the [documentation](https://computationalphysiology.github.io/fenicsx-warp).
 
+## Solver options and convergence
+`warp_mesh(..., petsc_options={...})` passes PETSc options to the solver: the Newton solver (SNES)
+of the hyperelastic warp, or the linear solver (KSP) of the Laplace warp. Global PETSc options with
+the prefix `warp_hyperelastic_` or `warp_laplace_` are read as well. If the solver does not converge,
+`warp_mesh` raises `warp.ConvergenceError` and leaves the mesh unchanged.
+
+```python
+import warp
+
+try:
+    warp.warp_mesh(mesh, points_mean, points_target,
+                   petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+except warp.ConvergenceError as e:
+    print(e)  # e.g. "SNES (warp_hyperelastic_) did not converge: DIVERGED_LINE_SEARCH (-6) ..."
+```
+
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.

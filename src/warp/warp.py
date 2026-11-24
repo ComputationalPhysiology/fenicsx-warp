@@ -85,6 +85,7 @@ def warp_mesh(
     solver_method: str = "hyperelastic",
     clip_origin: tuple[float, float, float] | np.ndarray | None = None,
     clip_normal: tuple[float, float, float] | np.ndarray | None = None,
+    petsc_options: dict | None = None,
 ):
     """
     Warps a given mesh from a mean shape to a target shape using PDE-based deformation.
@@ -101,6 +102,17 @@ def warp_mesh(
         Interpolation method ('rbf' or 'kdtree'), by default 'rbf'.
     solver_method : str, optional
         PDE solver method ('hyperelastic' or 'laplace'), by default 'hyperelastic'.
+    clip_origin, clip_normal : array-like, optional
+        A point on and the normal of a clipping plane; when both are given, the base on
+        that plane stays flat.
+    petsc_options : dict, optional
+        PETSc options passed to the solver of `solver_method`; see
+        :func:`warp.models.solve_hyperelastic` and :func:`warp.models.solve_laplace`.
+
+    Raises
+    ------
+    warp.ConvergenceError
+        If the solver does not converge. The mesh is then left unchanged.
 
     Notes
     -----
@@ -135,9 +147,9 @@ def warp_mesh(
     )
     # 3. Solve PDE
     if solver_method == "hyperelastic":
-        u_solution = models.solve_hyperelastic(domain, V, bc)
+        u_solution = models.solve_hyperelastic(domain, V, bc, petsc_options=petsc_options)
     elif solver_method == "laplace":
-        u_solution = models.solve_laplace(domain, V, bc)
+        u_solution = models.solve_laplace(domain, V, bc, petsc_options=petsc_options)
     else:
         raise ValueError("Invalid solver method. Choose 'hyperelastic' or 'laplace'.")
 
