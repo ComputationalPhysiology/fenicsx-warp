@@ -111,7 +111,7 @@ def warp_mesh(
 
     Raises
     ------
-    ConvergenceError
+    warp.ConvergenceError
         If the solver does not converge. The mesh is then left unchanged.
 
     Notes
