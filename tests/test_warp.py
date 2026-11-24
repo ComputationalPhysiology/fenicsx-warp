@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from dolfinx.mesh import create_unit_cube
 
-from warp import warp_mesh
+from warp import ConvergenceError, warp_mesh
 
 
 @pytest.fixture
@@ -83,3 +83,55 @@ def test_invalid_solver_method(sample_data):
             points_target=points_target,
             solver_method="invalid_name",
         )
+
+
+@pytest.fixture
+def stretch_data():
+    """A 4x4x4 unit cube warped onto a 30 % stretch: needs several Newton (or Krylov) iterations."""
+    domain = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    points_mean = (
+        np.array(np.meshgrid([0.0, 0.5, 1.0], [0.0, 0.5, 1.0], [0.0, 0.5, 1.0])).reshape(3, -1).T
+    )
+    return domain, points_mean, 1.3 * points_mean
+
+
+def test_hyperelastic_stretch_converges_by_default(stretch_data):
+    domain, points_mean, points_target = stretch_data
+    warp_mesh(domain, points_mean, points_target, solver_method="hyperelastic")
+    assert np.allclose(domain.geometry.x.max(axis=0), [1.3, 1.3, 1.3], atol=1e-2)
+
+
+@pytest.mark.parametrize(
+    "solver_method, petsc_options",
+    [
+        ("hyperelastic", {"snes_max_it": 1}),
+        ("laplace", {"ksp_type": "cg", "pc_type": "none", "ksp_max_it": 1}),
+    ],
+)
+def test_petsc_options_reach_the_solver(stretch_data, solver_method, petsc_options):
+    """Options that stop the solver early make it fail: the failure is reported and the mesh is
+    left unchanged."""
+    domain, points_mean, points_target = stretch_data
+    orig_coords = domain.geometry.x.copy()
+    with pytest.raises(ConvergenceError, match="DIVERGED"):
+        warp_mesh(
+            domain,
+            points_mean,
+            points_target,
+            solver_method=solver_method,
+            petsc_options=petsc_options,
+        )
+    assert np.array_equal(domain.geometry.x, orig_coords)
+
+
+def test_hyperelastic_reads_global_options_with_its_prefix(stretch_data):
+    from petsc4py import PETSc
+
+    domain, points_mean, points_target = stretch_data
+    opts = PETSc.Options()
+    opts["warp_hyperelastic_snes_max_it"] = 1
+    try:
+        with pytest.raises(ConvergenceError, match="DIVERGED_MAX_IT"):
+            warp_mesh(domain, points_mean, points_target, solver_method="hyperelastic")
+    finally:
+        opts.delValue("warp_hyperelastic_snes_max_it")
